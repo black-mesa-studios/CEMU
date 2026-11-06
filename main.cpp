@@ -8,6 +8,38 @@
 #include <string>
 #include <stdexcept>
 #include <cstdio>
+#include <termios.h>
+#include <unistd.h>
+
+char getch()
+{
+    termios oldt{};
+
+    if (tcgetattr(STDIN_FILENO, &oldt) == -1) {
+        perror("tcgetattr");
+        return '\0';
+    }
+
+    termios newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_cc[VMIN] = 1;
+    newt.c_cc[VTIME] = 0;
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &newt) == -1) {
+        perror("tcsetattr");
+        return '\0';
+    }
+
+    char c = 0;
+    ssize_t result = read(STDIN_FILENO, &c, 1);
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    if (result == -1)
+        perror("read");
+
+    return result == 1 ? c : '\0';
+}
 
 enum InstructionOpcode {
     NOP = 0x00,
@@ -27,8 +59,9 @@ enum InstructionOpcode {
     MW  = 0x0E,
     MR  = 0x0F,
     LDI = 0x10,
-    DDW = 0x11,
-    // soon LDIM = 0x12,
+    MSG = 0x11,
+    MLDI = 0x12,
+    
 };
 
 enum Flag {
@@ -136,7 +169,7 @@ class CPU {
         std::cin.ignore();
         std::cin.get();
         printf("\033[2J\033[H");
-
+        std::cout << "Starting execution!\n";
         flags.offbit(haltf);
         while(!flags.getbit(haltf)) {
             step();
@@ -274,16 +307,45 @@ int CPU::executeInstruction(uint8_t opcode, uint16_t arg1, uint16_t arg2) {
             break;
         }
 
-        case DDW:
+        case MSG:
         {
-            if(arg1 > 15) {
-                std::runtime_error("Register index out of bounds"); return 1;
+
+            if (arg2 > 15) {
+                throw std::runtime_error("Register index out of bounds");
             }
-            putc(static_cast<char>(registers[arg1]), stdout);
+
+            if (arg1 == 0x0000) {
+                putc(static_cast<char>(registers[arg2]), stdout);
+                fflush(stdout);
+            }
+            else if (arg1 == 0x0001) {
+                char c = getch();
+                registers[arg2] = static_cast<uint16_t>(static_cast<unsigned char>(c));
+            }
+            else if (arg1 == 0x0002) {
+                char c = getch();
+
+                registers[arg2] = static_cast<unsigned char>(c);
+
+                putc(c, stdout);
+                fflush(stdout);
+            }
+            else {
+                throw std::runtime_error("Invalid MSG argument");
+            }
+
             break;
         }
+
+        case MLDI:
+        {
+            memory[arg1] = static_cast<uint8_t>(arg2);
+            break;
+        }
+
     }
-    pc++;
+    if(increasePC)
+        pc++;
     return 0;
 }
 
@@ -294,6 +356,11 @@ int main() {
     printf("\033[2J\033[H");
     CPU *cpu = new CPU();
     int code = cpu->loadProgram(instructionFile);
+    if(code != 0) {
+        delete cpu;
+        std::cout << "Failed loading program!\n";
+        return 1;
+    }
     cpu->run();
     delete cpu;
     std::cout << "\n\nProgram exited with code " << code << std::endl;

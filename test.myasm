@@ -1,8 +1,5 @@
 .entry _start
 
 _start:
-ldi r0, 72
-ddw r0
-ldi r0, 105
-ddw r0
-hlt
+msg 0x0002, r0
+msg 0x0000, r0
