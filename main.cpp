@@ -43,7 +43,7 @@ char getch()
 
 enum InstructionOpcode {
     NOP = 0x00,
-    HLT = 0x01,
+    STP = 0x01,
     MOV = 0x02,
     ADD = 0x03,
     SUB = 0x04,
@@ -60,8 +60,12 @@ enum InstructionOpcode {
     MR  = 0x0F,
     LDI = 0x10,
     MSG = 0x11,
-    MLDI = 0x12,
-    
+    MLDI =0x12,
+    MUL = 0x13,
+    DIV = 0x14,
+    MOD = 0x15,
+    INC = 0x16,
+    DEC = 0x17
 };
 
 enum Flag {
@@ -167,7 +171,6 @@ class CPU {
     void run() {
         std::cout << "Press enter to start execution..." << std::endl;
         std::cin.ignore();
-        std::cin.get();
         printf("\033[2J\033[H");
         std::cout << "Starting execution!\n";
         flags.offbit(haltf);
@@ -185,7 +188,7 @@ int CPU::executeInstruction(uint8_t opcode, uint16_t arg1, uint16_t arg2) {
         case NOP:
         break;
 
-        case HLT:
+        case STP:
         {
             flags.onbit(haltf);
             break;
@@ -311,7 +314,7 @@ int CPU::executeInstruction(uint8_t opcode, uint16_t arg1, uint16_t arg2) {
         {
 
             if (arg2 > 15) {
-                throw std::runtime_error("Register index out of bounds");
+                std::runtime_error("Register index out of bounds"); return 1;
             }
 
             if (arg1 == 0x0000) {
@@ -343,19 +346,61 @@ int CPU::executeInstruction(uint8_t opcode, uint16_t arg1, uint16_t arg2) {
             break;
         }
 
+        case MUL:
+        {
+            checkregisterbounds
+            registers[arg1] *= registers[arg2];
+            break;
+        }
+
+        case DIV:
+        {
+            checkregisterbounds
+            registers[arg1] /= registers[arg2];
+            break;
+        }
+
+        case MOD:
+        {
+            checkregisterbounds
+            registers[arg1] %= registers[arg2];
+            break;
+        }
+
+        case INC:
+        {
+            if(arg1 > 15) {
+                std::runtime_error("Register index out of bounds"); return 1;
+            }
+                
+            registers[arg1]++;
+            break;
+        }
+
+        case DEC:
+        {
+            if(arg1 > 15) {
+                std::runtime_error("Register index out of bounds"); return 1;
+            }
+                
+            registers[arg1]--;
+            break;
+        }
+
     }
     if(increasePC)
         pc++;
     return 0;
 }
 
-int main() {
-    std::string instructionFile;
-    std::cout << "CEMU v0.1\nEnter Instruction File > ";
-    std::cin >> instructionFile;
+int main(int argc, char **argv) {
+    if(argc < 2) {
+        throw std::runtime_error("Invalid launch options. [argc too short]\n");
+        return 1;
+    }
     printf("\033[2J\033[H");
     CPU *cpu = new CPU();
-    int code = cpu->loadProgram(instructionFile);
+    int code = cpu->loadProgram(argv[1]);
     if(code != 0) {
         delete cpu;
         std::cout << "Failed loading program!\n";

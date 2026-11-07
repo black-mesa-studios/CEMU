@@ -1,5 +1,16 @@
 .entry _start
 
+loop:
+msg out, r0
+inc r0
+cmp r0, r1
+jz hlt
+jmp loop
+
 _start:
-msg 0x0002, r0
-msg 0x0000, r0
+ldi r0, 65
+ldi r1, 91
+jmp loop
+
+hlt:
+stp

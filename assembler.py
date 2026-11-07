@@ -12,7 +12,7 @@ MAX_INSTRUCTIONS = 65536
 
 OPCODES = {
     "NOP":  0x00,
-    "HLT":  0x01,
+    "STP":  0x01,
     "MOV":  0x02,
     "ADD":  0x03,
     "SUB":  0x04,
@@ -30,16 +30,27 @@ OPCODES = {
     "LDI":  0x10,
     "MLDI": 0x12,
     "MSG":  0x11,
+    "MUL":  0x13,
+    "DIV":  0x14,
+    "MOD":  0x15,
+    "INC":  0x16,
+    "DEC":  0x17,
 }
 
 
 OPERAND_COUNT = {
     "NOP":  0,
-    "HLT":  0,
+    "STP":  0,
 
     "MOV":  2,
     "ADD":  2,
     "SUB":  2,
+    "MUL":  2,
+    "DIV":  2,
+    "MOD":  2,
+
+    "INC":  1,
+    "DEC":  1,
 
     "SHR":  1,
     "SHL":  1,
@@ -67,11 +78,17 @@ OPERAND_COUNT = {
 REGISTER_INSTRUCTIONS = {
     "MOV": (0, 1),
     "ADD": (0, 1),
+    "MUL": (0, 1),
+    "DIV": (0, 1),
+    "MOD": (0, 1),
     "SUB": (0, 1),
     "XOR": (0, 1),
     "OR":  (0, 1),
     "AND": (0, 1),
     "CMP": (0, 1),
+    
+    "INC": (0,),
+    "DEC": (0,),
 
     "SHR": (0,),
     "SHL": (0,),
