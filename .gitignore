@@ -1,2 +1,4 @@
+build/
 cemu
+test.myasm
 program.bin

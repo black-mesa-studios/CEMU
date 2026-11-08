@@ -1,0 +1,3 @@
+setup mkdir build/
+build g++ -O2 -std=c++17 main.cpp src/* -o build/cemu
+clean rm -rf build/
